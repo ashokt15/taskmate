@@ -1,29 +1,45 @@
-import express from 'express';
-import cors from 'cors';
-import mongoose from 'mongoose';
-import dotenv from 'dotenv';
-import authRoutes from './routes/auth.js';
-import taskRoutes from './routes/tasks.js';
-import { authenticateToken } from './middleware/auth.js';
+const express = require('express');
+const dotenv = require('dotenv');
+const cors = require('cors');
+const connectDB = require('./config/db');
+const authRoutes = require('./routes/auth');
+const taskRoutes = require('./routes/tasks');
 
+// Load environment variables from .env file
 dotenv.config();
 
-const app = express();
-const PORT = process.env.PORT || 5000;
+// Connect to MongoDB database
+connectDB();
 
-// Middleware
-app.use(cors());
+const app = express();
+
+// Middleware to enable CORS (Cross-Origin Resource Sharing)
+// Allows requests from the specified frontend origin.
+app.use(cors({
+  origin: process.env.FRONTEND_ORIGIN, // e.g., 'http://localhost:5173' or 'https://your-vercel-frontend.vercel.app'
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed HTTP methods
+  allowedHeaders: ['Content-Type', 'Authorization'], // Allowed request headers
+}));
+
+// Middleware to parse JSON request bodies
 app.use(express.json());
 
-// Routes
+// Define API routes
+// Authentication routes
 app.use('/api/auth', authRoutes);
-app.use('/api/tasks', authenticateToken, taskRoutes);
+// Task management routes
+app.use('/api/tasks', taskRoutes);
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('MongoDB connection error:', err));
+// Basic route for testing server status
+app.get('/', (req, res) => {
+  res.send('Taskmate API is running...');
+});
 
+// Define the port for the server to listen on
+// Uses the PORT environment variable or defaults to 5000
+const PORT = process.env.PORT || 5000;
+
+// Start the server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
