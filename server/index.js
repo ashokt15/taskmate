@@ -17,8 +17,7 @@ const app = express();
 // Allows requests from the specified frontend origin.
 app.use(cors({
   origin: process.env.FRONTEND_ORIGIN, // e.g., 'http://localhost:5173' or 'https://your-vercel-frontend.vercel.app'
-  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed HTTP methods
-  allowedHeaders: ['Content-Type', 'Authorization'], // Allowed request headers
+  credentials: true, // Allow cookies to be sent with requests
 }));
 
 // Middleware to parse JSON request bodies
