@@ -62,7 +62,7 @@ const createTask = async (req, res) => {
  * @access Private
  */
 const updateTask = async (req, res) => {
-  const { title, description, tags, dueDate, priority, status } = req.body;
+  const { title, description, tags, dueDate, priority, completed } = req.body;
 
   try {
     // Find the task by ID and ensure it belongs to the authenticated user
@@ -80,15 +80,13 @@ const updateTask = async (req, res) => {
     task.priority = priority || task.priority;
 
     // Handle status change and update completedAt timestamp
-    if (status !== undefined && task.status !== status) {
-      task.status = status;
-      if (status === 'Completed') {
+    if (completed !== undefined && task.completed !== completed) {
+      task.completed = completed;
+      if (completed) {
         task.completedAt = new Date();
       } else {
         task.completedAt = null; // Clear completedAt if status changes from Completed
       }
-    } else {
-      task.status = status || task.status;
     }
 
     // Save the updated task

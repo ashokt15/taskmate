@@ -1,5 +1,11 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { format } from 'date-fns';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from 'react';
+import axios from 'axios';
 
 export interface Task {
   id: string;
@@ -14,104 +20,86 @@ export interface Task {
 
 interface TaskContextType {
   tasks: Task[];
-  addTask: (task: Omit<Task, 'id' | 'createdAt'>) => void;
-  updateTask: (id: string, task: Partial<Task>) => void;
-  deleteTask: (id: string) => void;
-  completeTask: (id: string) => void;
+  addTask: (task: Omit<Task, 'id' | 'createdAt'>) => Promise<void>;
+  updateTask: (id: string, task: Partial<Task>) => Promise<void>;
+  deleteTask: (id: string) => Promise<void>;
+  completeTask: (id: string) => Promise<void>;
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
 
-// Mock initial tasks
-const initialTasks: Task[] = [
-  {
-    id: '1',
-    title: 'Complete project proposal',
-    description: 'Finish the draft and send it to the team for review',
-    completed: false,
-    createdAt: '2023-06-15T10:00:00Z',
-    dueDate: format(new Date().setDate(new Date().getDate() + 2), 'yyyy-MM-dd'),
-    priority: 'high',
-    tags: ['work', 'project']
-  },
-  {
-    id: '2',
-    title: 'Buy groceries',
-    description: 'Milk, eggs, bread, and vegetables',
-    completed: true,
-    createdAt: '2023-06-14T15:30:00Z',
-    dueDate: format(new Date(), 'yyyy-MM-dd'),
-    priority: 'medium',
-    tags: ['personal', 'shopping']
-  },
-  {
-    id: '3',
-    title: 'Schedule dentist appointment',
-    completed: false,
-    createdAt: '2023-06-13T09:15:00Z',
-    dueDate: format(new Date().setDate(new Date().getDate() + 5), 'yyyy-MM-dd'),
-    priority: 'low',
-    tags: ['personal', 'health']
-  },
-  {
-    id: '4',
-    title: 'Prepare presentation for meeting',
-    description: 'Include key metrics and project updates',
-    completed: false,
-    createdAt: '2023-06-12T14:00:00Z',
-    dueDate: format(new Date().setDate(new Date().getDate() + 1), 'yyyy-MM-dd'),
-    priority: 'high',
-    tags: ['work', 'meeting']
-  },
-  {
-    id: '5',
-    title: 'Review code pull request',
-    completed: false,
-    createdAt: '2023-06-12T11:30:00Z',
-    dueDate: format(new Date(), 'yyyy-MM-dd'),
-    priority: 'medium',
-    tags: ['work', 'coding']
-  }
-];
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+
+function getAuthHeaders() {
+  const token = localStorage.getItem('taskmate_token');
+  return {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  };
+}
 
 export function TaskProvider({ children }: { children: ReactNode }) {
-  const [tasks, setTasks] = useState<Task[]>(() => {
-    const savedTasks = localStorage.getItem('taskmate_tasks');
-    return savedTasks ? JSON.parse(savedTasks) : initialTasks;
-  });
+  const [tasks, setTasks] = useState<Task[]>([]);
 
-  // Save tasks to localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem('taskmate_tasks', JSON.stringify(tasks));
-  }, [tasks]);
-
-  const addTask = (task: Omit<Task, 'id' | 'createdAt'>) => {
-    const newTask: Task = {
-      ...task,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
+    const fetchTasks = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/tasks`, getAuthHeaders());
+        setTasks(res.data);
+      } catch (error) {
+        console.error('Failed to fetch tasks:', error);
+      }
     };
-    setTasks(prevTasks => [...prevTasks, newTask]);
+    fetchTasks();
+  }, []);
+
+  const addTask = async (task: Omit<Task, 'id' | 'createdAt'>) => {
+    try {
+      const res = await axios.post(`${API_BASE_URL}/tasks`, task, getAuthHeaders());
+      setTasks((prev) => [...prev, res.data]);
+    } catch (error) {
+      console.error('Error adding task:', error);
+    }
   };
 
-  const updateTask = (id: string, updatedTask: Partial<Task>) => {
-    setTasks(prevTasks =>
-      prevTasks.map(task =>
-        task.id === id ? { ...task, ...updatedTask } : task
-      )
-    );
+  const updateTask = async (id: string, updatedTask: Partial<Task>) => {
+    try {
+      const res = await axios.put(`${API_BASE_URL}/tasks/${id}`, updatedTask, getAuthHeaders());
+      setTasks((prev) =>
+        prev.map((task) => (task.id === id ? res.data : task))
+      );
+    } catch (error) {
+      console.error('Error updating task:', error);
+    }
   };
 
-  const deleteTask = (id: string) => {
-    setTasks(prevTasks => prevTasks.filter(task => task.id !== id));
+  const deleteTask = async (id: string) => {
+    try {
+      await axios.delete(`${API_BASE_URL}/tasks/${id}`, getAuthHeaders());
+      setTasks((prev) => prev.filter((task) => task.id !== id));
+    } catch (error) {
+      console.error('Error deleting task:', error);
+    }
   };
 
-  const completeTask = (id: string) => {
-    setTasks(prevTasks =>
-      prevTasks.map(task =>
-        task.id === id ? { ...task, completed: !task.completed } : task
-      )
-    );
+  const completeTask = async (id: string) => {
+    try {
+      const task = tasks.find((t) => t.id === id);
+      if (!task) return;
+
+      const res = await axios.put(
+        `${API_BASE_URL}/tasks/${id}`,
+        { completed: !task.completed },
+        getAuthHeaders()
+      );
+
+      setTasks((prev) =>
+        prev.map((t) => (t.id === id ? res.data : t))
+      );
+    } catch (error) {
+      console.error('Error toggling completion:', error);
+    }
   };
 
   return (
@@ -121,7 +109,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         addTask,
         updateTask,
         deleteTask,
-        completeTask
+        completeTask,
       }}
     >
       {children}

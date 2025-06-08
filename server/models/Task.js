@@ -31,10 +31,9 @@ const taskSchema = new mongoose.Schema({
     enum: ['low', 'medium', 'high'],
     default: 'medium',
   },
-  status: {
-    type: String,
-    enum: ['Pending', 'Completed'],
-    default: 'Pending',
+  completed: {
+    type: Boolean,
+    default: false,
   },
   createdAt: {
     type: Date,
@@ -43,6 +42,14 @@ const taskSchema = new mongoose.Schema({
   completedAt: {
     type: Date,
     default: null,
+  },
+});
+
+taskSchema.set('toJSON', {
+  transform: (doc, ret) => {
+    ret.id = ret._id;
+    delete ret._id;
+    delete ret.__v;
   },
 });
 

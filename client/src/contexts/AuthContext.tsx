@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import axios from 'axios';
 
 interface User {
   id: string;
@@ -19,19 +20,22 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const DEMO_USER = {
+// Demo user
+const DEMO_USER: User = {
   id: 'demo-user',
   name: 'Demo User',
   email: 'demo@example.com',
   avatar: 'https://ui-avatars.com/api/?name=Demo+User&background=random'
 };
 
+// Base URL from environment
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is stored in localStorage
     const storedUser = localStorage.getItem('taskmate_user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
@@ -39,35 +43,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   }, []);
 
-  // Mock login function (would connect to backend in real implementation)
   const login = async (email: string, password: string) => {
     try {
       setLoading(true);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // For demo purposes, create a mock user
-      const mockUser = {
-        id: '1',
-        name: email.split('@')[0],
-        email,
-        avatar: `https://ui-avatars.com/api/?name=${email.split('@')[0]}&background=random`
-      };
-      
-      setUser(mockUser);
-      localStorage.setItem('taskmate_user', JSON.stringify(mockUser));
+      const response = await axios.post(`${API_BASE_URL}/auth/login`, { email, password });
+      const userData: User = response.data;
+      const token = response.data.token;
+      setUser(userData);
+      localStorage.setItem('taskmate_user', JSON.stringify(userData));
+      localStorage.setItem('taskmate_token', token);
+    } catch (error: any) {
+      console.error('Login error:', error.response?.data?.message || error.message);
+      alert(error.response?.data?.message || 'Login failed');
     } finally {
       setLoading(false);
     }
   };
 
-  // Demo login function
   const loginDemo = async () => {
     try {
       setLoading(true);
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
       setUser(DEMO_USER);
       localStorage.setItem('taskmate_user', JSON.stringify(DEMO_USER));
     } finally {
@@ -75,22 +71,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Mock register function
   const register = async (name: string, email: string, password: string) => {
     try {
       setLoading(true);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const mockUser = {
-        id: '1',
+      const response = await axios.post(`${API_BASE_URL}/auth/register`, {
         name,
         email,
-        avatar: `https://ui-avatars.com/api/?name=${name}&background=random`
-      };
-      
-      setUser(mockUser);
-      localStorage.setItem('taskmate_user', JSON.stringify(mockUser));
+        password
+      });
+      const userData: User = response.data;
+      const token = response.data.token;
+      setUser(userData);
+      localStorage.setItem('taskmate_user', JSON.stringify(userData));
+      localStorage.setItem('taskmate_token', token);
+    } catch (error: any) {
+      console.error('Registration error:', error.response?.data?.message || error.message);
+      alert(error.response?.data?.message || 'Registration failed');
     } finally {
       setLoading(false);
     }
