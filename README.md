@@ -6,8 +6,8 @@ Taskmate is a minimalist, modern, and responsive web application that allows use
 
 ## 🚀 Live Demo
 
-🌐 [Frontend (Vercel)](https://your-taskmate-frontend.vercel.app)  
-🔗 [Backend (Heroku)](https://your-taskmate-backend.herokuapp.com)
+🌐 [Frontend (Vercel)](https://taskmate-azure.vercel.app/)
+🔗 [Backend (Render)](https://taskmate-zy3e.onrender.com/)
 
 ---
 
@@ -19,7 +19,7 @@ Taskmate is a minimalist, modern, and responsive web application that allows use
 | Backend    | Node.js, Express                    |
 | Database   | MongoDB (Atlas / Docker)            |
 | Auth       | JWT-based Authentication            |
-| Deployment | Vercel (Frontend), Heroku (Backend) |
+| Deployment | Vercel (Frontend), Render (Backend) |
 | Dev Tools  | Docker, concurrently, dotenv, Git   |
 
 ---
@@ -131,7 +131,7 @@ docker-compose up -d
 - Deploy `client/` folder
 - Set `VITE_API_URL` env variable to backend URL
 
-### Backend (Heroku)
+### Backend (Render)
 
 - Deploy `server/` folder
 - Set env vars:
